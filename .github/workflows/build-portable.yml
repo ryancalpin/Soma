@@ -5,6 +5,7 @@ name: Build portable bundles
 on:
   workflow_dispatch:
   push:
+    branches: ["claude/medical-imaging-3d-viewer-8BF2e"]
     tags: ["v*"]
 
 jobs:
