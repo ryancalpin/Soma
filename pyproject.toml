@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "soma"
+version = "0.1.0"
+description = "Turn screen recordings of medical imaging studies into interactive 3D/4D viewers"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "python-multipart>=0.0.9",
+    "pydantic>=2.6",
+    "sse-starlette>=2.0",
+    "numpy>=1.26",
+    "opencv-python-headless>=4.9",
+    "scikit-image>=0.22",
+    "imagehash>=4.3",
+    "pillow>=10.2",
+    "nibabel>=5.2",
+    "imageio-ffmpeg>=0.4.9",
+    "easyocr>=1.7",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+soma = "run:main"
+
+[tool.setuptools.packages.find]
+include = ["soma*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

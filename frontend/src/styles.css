@@ -1,0 +1,79 @@
+:root {
+  --bg: #0d1117;
+  --panel: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --muted: #9198a1;
+  --accent: #2f81f7;
+  --warn: #d29922;
+  --error: #f85149;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.app { max-width: 920px; margin: 0 auto; padding: 24px 16px 64px; }
+
+header { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+header h1 { margin: 0; font-size: 28px; }
+.tagline { color: var(--muted); margin: 0; flex: 1; }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 20px;
+}
+.card h2 { margin-top: 0; font-size: 18px; }
+.muted { color: var(--muted); font-size: 14px; }
+.warn { color: var(--warn); font-size: 13px; }
+.error { color: var(--error); }
+
+.field { display: block; margin: 14px 0; }
+.field select, .field-inline input { margin-left: 8px; }
+.field-inline { display: inline-flex; align-items: center; gap: 4px; }
+
+button {
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 8px 16px;
+  font-size: 14px;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.5; cursor: default; }
+button.link { background: none; color: var(--accent); padding: 0; }
+.toolbar button { background: var(--border); margin-right: 6px; text-transform: capitalize; }
+.toolbar button.active { background: var(--accent); }
+
+input[type="file"] { display: block; margin: 12px 0; color: var(--text); }
+
+.progress-bar { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+.progress-fill { height: 100%; background: var(--accent); transition: width 0.3s; }
+
+.crop-wrap { position: relative; display: inline-block; max-width: 100%; cursor: crosshair; }
+.crop-wrap img { max-width: 100%; display: block; user-select: none; }
+.crop-overlay {
+  position: absolute;
+  border: 2px solid #3fb950;
+  background: rgba(63, 185, 80, 0.12);
+  pointer-events: none;
+}
+
+.viewer { margin-top: 20px; }
+.nv-canvas { width: 100%; height: 600px; background: black; border-radius: 8px; }
+.cine-canvas { max-width: 100%; background: black; border-radius: 8px; display: block; }
+.toolbar { margin-bottom: 8px; }
+
+.time-scrubber, .cine-controls { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.time-scrubber input[type="range"], .cine-controls input[type="range"] { flex: 1; }
+
+.summary ul { line-height: 1.7; }
