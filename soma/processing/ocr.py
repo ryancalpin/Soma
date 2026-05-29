@@ -56,18 +56,24 @@ class _Det:
     text: str
 
 
-def _preprocess(img: np.ndarray) -> tuple[np.ndarray, float]:
-    """Upscale small UI text to help OCR. Returns (image, scale)."""
-    scale = 2.0
-    up = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
-    return up, scale
+def _preprocess(img: np.ndarray, upscale: float) -> tuple[np.ndarray, float]:
+    """Optionally upscale small UI text to help OCR. Returns (image, scale)."""
+    if upscale == 1.0:
+        return img, 1.0
+    up = cv2.resize(img, None, fx=upscale, fy=upscale, interpolation=cv2.INTER_CUBIC)
+    return up, upscale
 
 
-def _detect(img: np.ndarray) -> list[_Det]:
-    """Run OCR and return detections in full-frame (input) pixel coords."""
+def _detect(img: np.ndarray, upscale: float = 2.0) -> list[_Det]:
+    """Run OCR and return detections in full-frame (input) pixel coords.
+
+    The locking pass scans whole screens, so it runs at native resolution
+    (``upscale=1``) for speed; the per-frame read pass works on a tiny crop where
+    a 2x upscale is cheap and improves recognition of small counters.
+    """
     if img.size == 0:
         return []
-    up, scale = _preprocess(img)
+    up, scale = _preprocess(img, upscale)
     result, _ = _get_engine()(up)
     dets: list[_Det] = []
     for box, text, _conf in result or []:
@@ -133,19 +139,26 @@ def lock_counter(frames: list[Path], image_roi: ROISpec, sample: int) -> Optiona
         if frame is None:
             continue
         masked = _mask_image_region(frame, image_roi)
-        found = _find_counter(_detect(masked))
+        found = _find_counter(_detect(masked, upscale=1.0))  # whole screen: native res
         if not found:
             continue
         reading, box = found
         key = (box.x // 20, box.y // 20)  # bin to tolerate jitter
         slot = votes.setdefault(key, {"count": 0, "box": box, "fmt": reading.fmt})
         slot["count"] += 1
+        # Grow the box to the union seen at this position, so a widening index
+        # (e.g. "1/200" -> "199/200") is never clipped on later frames.
+        u = slot["box"]
+        ux, uy = min(u.x, box.x), min(u.y, box.y)
+        ux2 = max(u.x + u.width, box.x + box.width)
+        uy2 = max(u.y + u.height, box.y + box.height)
+        slot["box"] = ROISpec(x=ux, y=uy, width=ux2 - ux, height=uy2 - uy)
 
     if not votes:
         return None
     best = max(votes.values(), key=lambda s: s["count"])
     box = best["box"]
-    pad = 10  # widen the locked box so a growing index (e.g. 9 -> 120) still fits
+    pad = 10  # small safety margin around the unioned box
     padded = ROISpec(
         x=max(0, box.x - pad),
         y=max(0, box.y - pad),
@@ -155,8 +168,23 @@ def lock_counter(frames: list[Path], image_roi: ROISpec, sample: int) -> Optiona
     return CounterLock(box=padded, fmt=best["fmt"] or "unknown")
 
 
+def _recognize(crop: np.ndarray) -> str:
+    """Recognition-only OCR of a known text region (no detection) — ~100x faster.
+
+    The locked box already isolates the counter, so we skip the heavy text-detection
+    model and only run recognition on the (upscaled) crop, reading it as one line.
+    """
+    if crop.size == 0:
+        return ""
+    up, _ = _preprocess(crop, 2.0)
+    result, _ = _get_engine()(up, use_det=False, use_cls=False, use_rec=True)
+    if not result:
+        return ""
+    return " ".join(r[0] for r in result)
+
+
 def read_counters(frames: list[Path], lock: CounterLock) -> list[CounterReading]:
-    """Read the counter from the locked box for every frame."""
+    """Read the counter from the locked box for every frame (recognition-only)."""
     readings: list[CounterReading] = []
     b = lock.box
     for p in frames:
@@ -165,6 +193,9 @@ def read_counters(frames: list[Path], lock: CounterLock) -> list[CounterReading]
             readings.append(CounterReading())
             continue
         crop = frame[b.y : b.y + b.height, b.x : b.x + b.width]
-        found = _find_counter(_detect(crop))
-        readings.append(found[0] if found else CounterReading())
+        text = _recognize(crop)
+        reading = parse_counter(text)
+        if not reading.valid:
+            reading = parse_counter(_normalize(text))
+        readings.append(reading)
     return readings
