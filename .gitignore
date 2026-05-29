@@ -22,3 +22,7 @@ data/models/
 
 # OS
 .DS_Store
+
+# setuptools build artifact (build/ also holds make_portable.py, keep that)
+build/lib/
+*.egg-info/
