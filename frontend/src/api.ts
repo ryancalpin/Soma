@@ -52,6 +52,16 @@ export function firstFrameUrl(jobId: string): string {
   return `/api/jobs/${jobId}/first-frame`;
 }
 
+export function rawFrameUrl(jobId: string, frame: number): string {
+  return `/api/jobs/${jobId}/frame/${frame}`;
+}
+
+export async function framesCount(jobId: string): Promise<number> {
+  const res = await fetch(`/api/jobs/${jobId}/frames-count`);
+  if (!res.ok) return 1;
+  return (await res.json()).count ?? 1;
+}
+
 export function volumeUrl(jobId: string): string {
   return `/api/jobs/${jobId}/volume.nii.gz`;
 }
