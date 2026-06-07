@@ -5,7 +5,7 @@ dependencies installed, the built frontend, and a double-click launcher. The use
 copies the folder to a USB stick and runs the launcher — no admin rights, no install.
 
 Usage:
-    python build/make_portable.py --target {windows-x64,macos-arm64,macos-x64,linux-x64}
+    python build/make_portable.py --target {windows-x64,macos-arm64,linux-x64}
                                   [--output dist]
 
 Run AFTER building the frontend (so soma/static exists):
@@ -35,8 +35,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 TRIPLES = {
     "windows-x64": "x86_64-pc-windows-msvc",
     "macos-arm64": "aarch64-apple-darwin",
-    "macos-x64": "x86_64-apple-darwin",
-    "linux-x64": "x86_64-unknown-linux-gnu",
+    "linux-x64": "x86_64-unknown-linux-gnu",  # local dev/testing only, not shipped
 }
 
 PBS_API = "https://api.github.com/repos/astral-sh/python-build-standalone/releases/latest"

@@ -44,12 +44,12 @@ bundle**: a folder containing a self-contained Python, all dependencies, the app
 double-click launcher. Copy it to a USB stick and run it — no admin rights, fully offline.
 
 1. **Get a bundle** for your OS:
-   - Download the `Soma-windows-x64.zip` / `Soma-macos-arm64.tar.gz` / `Soma-macos-x64.tar.gz`
+   - Download the `Soma-windows-x64.zip` / `Soma-macos-arm64.tar.gz` (Apple Silicon)
      artifact from the **Build portable bundles** GitHub Action (or a tagged Release).
    - Or build one yourself on a machine you *can* install on:
      ```bash
      cd frontend && npm ci && npm run build && cd ..
-     python build/make_portable.py --target macos-arm64   # or windows-x64, macos-x64
+     python build/make_portable.py --target macos-arm64   # or windows-x64
      ```
 2. **Unzip onto the USB stick.**
 3. **Run:**
