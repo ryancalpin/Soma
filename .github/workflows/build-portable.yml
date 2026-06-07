@@ -1,0 +1,66 @@
+name: Build portable bundles
+
+# Builds no-install, USB-portable Soma bundles for Windows and macOS.
+# Runs on demand, and attaches the bundles to a GitHub Release when you push a tag.
+on:
+  workflow_dispatch:
+  push:
+    branches: ["claude/medical-imaging-3d-viewer-8BF2e"]
+    tags: ["v*"]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows-x64
+          - os: macos-14 # Apple Silicon
+            target: macos-arm64
+          - os: macos-13 # Intel
+            target: macos-x64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Build frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Assemble portable bundle
+        env:
+          GITHUB_TOKEN: ${{ github.token }} # lets the API pick the latest CPython
+        run: python build/make_portable.py --target ${{ matrix.target }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Soma-${{ matrix.target }}
+          path: dist/Soma-${{ matrix.target }}.*
+          if-no-files-found: error
+
+  release:
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/**/Soma-*.*
+          generate_release_notes: true

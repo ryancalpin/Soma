@@ -24,6 +24,28 @@ async def first_frame(job_id: str) -> Response:
     return Response(content=data, media_type="image/png")
 
 
+@router.get("/jobs/{job_id}/frames-count")
+async def frames_count(job_id: str) -> dict:
+    """Number of extracted frames — used by the crop scrubber."""
+    job = registry.get(job_id)
+    if job is None:
+        raise HTTPException(404, "job not found")
+    frames = sorted((config.job_dir(job_id) / "frames").glob("frame_*.png"))
+    return {"count": len(frames)}
+
+
+@router.get("/jobs/{job_id}/frame/{frame}")
+async def raw_frame(job_id: str, frame: int) -> Response:
+    """A specific uncropped frame, so the user can pick a clearer frame to crop on."""
+    job = registry.get(job_id)
+    if job is None:
+        raise HTTPException(404, "job not found")
+    frames = sorted((config.job_dir(job_id) / "frames").glob("frame_*.png"))
+    if not (0 <= frame < len(frames)):
+        raise HTTPException(404, "frame out of range")
+    return Response(content=frames[frame].read_bytes(), media_type="image/png")
+
+
 @router.get("/jobs/{job_id}/volume.nii.gz")
 async def volume(job_id: str) -> FileResponse:
     path = config.job_dir(job_id) / "volume.nii.gz"

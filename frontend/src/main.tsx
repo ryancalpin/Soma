@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactDOM from "react-dom/client";
 import {
-  JobStatus, ROISpec, firstFrameUrl, submitRoi, subscribeEvents, uploadRecording,
+  JobStatus, ROISpec, submitRoi, subscribeEvents, uploadRecording,
 } from "./api";
 import { Uploader } from "./components/Uploader";
 import { CropEditor } from "./components/CropEditor";
@@ -9,6 +9,15 @@ import { ProgressView } from "./components/ProgressView";
 import { NiiVueViewer } from "./components/NiiVueViewer";
 import { CinePlayer } from "./components/CinePlayer";
 import "./styles.css";
+
+const STEPS = ["Upload", "Crop", "Reconstruct", "View"];
+
+function stepIndex(jobId: string | null, stage?: string): number {
+  if (!jobId) return 0;
+  if (stage === "await_roi") return 1;
+  if (stage === "done") return 3;
+  return 2;
+}
 
 function App() {
   const [jobId, setJobId] = useState<string | null>(null);
@@ -42,20 +51,35 @@ function App() {
 
   const stage = status?.stage;
   const meta = status?.meta ?? null;
+  const current = stepIndex(jobId, stage);
 
   return (
     <div className="app">
-      <header>
-        <h1>Soma</h1>
-        <p className="tagline">Screen recording → interactive 3D / 4D medical viewer</p>
-        {jobId && <button className="link" onClick={reset}>Start over</button>}
+      <header className="app-header">
+        <div className="brand">
+          <span className="logo">◑</span>
+          <div>
+            <h1>Soma</h1>
+            <p className="tagline">Screen recording → interactive 3D / 4D viewer</p>
+          </div>
+        </div>
+        {jobId && <button className="ghost small" onClick={reset}>Start over</button>}
       </header>
+
+      <ol className="stepper">
+        {STEPS.map((label, i) => (
+          <li key={label} className={i === current ? "active" : i < current ? "done" : ""}>
+            <span className="dot">{i < current ? "✓" : i + 1}</span>
+            {label}
+          </li>
+        ))}
+      </ol>
 
       {!jobId && <Uploader onUpload={onUpload} busy={busy} />}
 
       {jobId && stage === "await_roi" && (
         <CropEditor
-          imageUrl={firstFrameUrl(jobId)}
+          jobId={jobId}
           suggested={status?.suggested_roi ?? null}
           onConfirm={onConfirmRoi}
         />
@@ -73,6 +97,10 @@ function App() {
             : <NiiVueViewer jobId={jobId} meta={meta} />}
         </>
       )}
+
+      <footer className="app-footer">
+        Processed locally · not for primary diagnosis
+      </footer>
     </div>
   );
 }
@@ -82,23 +110,30 @@ function ResultSummary({ status }: { status: JobStatus }) {
   return (
     <div className="card summary">
       <h2>Reconstruction ready</h2>
-      <ul>
-        <li>Type: <b>{m.output_kind.replace(/_/g, " ")}</b> ({m.modality})</li>
-        <li>Shape: {m.shape.join(" × ")}</li>
-        <li>
-          OCR: {m.ocr.counter_found
-            ? `${m.ocr.frames_confident}/${m.ocr.frames_total} frames read (${m.ocr.detected_format})`
-            : "no counter detected — used content-based ordering"}
-        </li>
+      <div className="summary-grid">
+        <div><span className="k">Type</span><span className="v">{m.output_kind.replace(/_/g, " ")}</span></div>
+        <div><span className="k">Modality</span><span className="v">{m.modality}</span></div>
+        <div><span className="k">Shape</span><span className="v">{m.shape.join(" × ")}</span></div>
+        <div>
+          <span className="k">OCR</span>
+          <span className="v">
+            {m.ocr.counter_found
+              ? `${m.ocr.frames_confident}/${m.ocr.frames_total} (${m.ocr.detected_format})`
+              : "content-based"}
+          </span>
+        </div>
         {m.completeness.expected_slices > 0 && (
-          <li>
-            Slices: {m.completeness.present_slices}/{m.completeness.expected_slices} present
-            {m.completeness.missing_slices.length > 0 &&
-              ` (${m.completeness.missing_slices.length} interpolated)`}
-            , {m.completeness.timepoints} timepoint(s)
-          </li>
+          <div>
+            <span className="k">Slices</span>
+            <span className="v">
+              {m.completeness.present_slices}/{m.completeness.expected_slices}
+              {m.completeness.missing_slices.length > 0 &&
+                ` (${m.completeness.missing_slices.length} interp.)`}
+              {m.completeness.timepoints > 1 && ` · ${m.completeness.timepoints} timepts`}
+            </span>
+          </div>
         )}
-      </ul>
+      </div>
       <p className="warn">{m.note}</p>
     </div>
   );

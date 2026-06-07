@@ -27,7 +27,7 @@ data never leaves your machine.
 
 | Layer | Stack |
 |---|---|
-| Backend | FastAPI + Uvicorn, `imageio-ffmpeg` (frame extraction), OpenCV/NumPy (ROI + assembly), **EasyOCR** (slice counters), **nibabel** (NIfTI), SSE progress |
+| Backend | FastAPI + Uvicorn, `imageio-ffmpeg` (frame extraction), OpenCV/NumPy (ROI + assembly), **RapidOCR** (ONNX slice-counter reading, models bundled — fully offline), **nibabel** (NIfTI), SSE progress |
 | Frontend | Vite + React + TypeScript, **NiiVue** (MPR/3D/4D viewer), canvas cine player |
 
 ```
@@ -37,7 +37,33 @@ soma/api/         upload · jobs (status/SSE) · assets
 frontend/src/     Uploader · CropEditor · ProgressView · NiiVueViewer · CinePlayer
 ```
 
-## Install & run
+## Run it portably (no install — USB stick)
+
+For a locked-down work computer where you can't install Python/Node, use a **portable
+bundle**: a folder containing a self-contained Python, all dependencies, the app, and a
+double-click launcher. Copy it to a USB stick and run it — no admin rights, fully offline.
+
+1. **Get a bundle** for your OS:
+   - Download the `Soma-windows-x64.zip` / `Soma-macos-arm64.tar.gz` / `Soma-macos-x64.tar.gz`
+     artifact from the **Build portable bundles** GitHub Action (or a tagged Release).
+   - Or build one yourself on a machine you *can* install on:
+     ```bash
+     cd frontend && npm ci && npm run build && cd ..
+     python build/make_portable.py --target macos-arm64   # or windows-x64, macos-x64
+     ```
+2. **Unzip onto the USB stick.**
+3. **Run:**
+   - Windows: double-click `Soma.bat`
+   - macOS: double-click `Soma.command` (first time: right-click → Open to clear Gatekeeper)
+
+   A console window opens and your browser launches at `http://127.0.0.1:8000`. Recordings
+   and reconstructions are stored in the `data/` folder next to the launcher (on the stick),
+   so deleting that folder wipes all patient data.
+
+The Windows and macOS bundles are produced automatically by
+`.github/workflows/build-portable.yml` (manually via *Run workflow*, or on a `v*` tag).
+
+## Install & run (developers)
 
 ```bash
 # Backend (Python 3.10+)
@@ -50,8 +76,8 @@ cd frontend && npm install && npm run build && cd ..
 python run.py
 ```
 
-The first OCR run downloads EasyOCR model weights into `data/models/`. To stay fully
-offline afterwards, keep those weights in place.
+OCR runs fully offline — RapidOCR's ONNX models ship inside the package, so there is no
+first-run download.
 
 ### Development
 

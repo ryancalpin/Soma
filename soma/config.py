@@ -9,10 +9,10 @@ from pathlib import Path
 PACKAGE_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = PACKAGE_DIR.parent
 
-# Where per-job working directories and OCR weights live.
+# Where per-job working directories live. On the portable USB build the launcher
+# points SOMA_DATA_DIR at a folder next to the app so recordings stay on the stick.
 DATA_DIR = Path(os.environ.get("SOMA_DATA_DIR", PROJECT_ROOT / "data"))
 JOBS_DIR = DATA_DIR / "jobs"
-MODELS_DIR = DATA_DIR / "models"
 
 # Built frontend assets served by FastAPI.
 STATIC_DIR = PACKAGE_DIR / "static"
@@ -36,7 +36,6 @@ DEDUP_HASH_THRESHOLD = int(os.environ.get("SOMA_DEDUP_THRESHOLD", "4"))
 def ensure_dirs() -> None:
     """Create the data directories if they do not yet exist."""
     JOBS_DIR.mkdir(parents=True, exist_ok=True)
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def job_dir(job_id: str) -> Path:

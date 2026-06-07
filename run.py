@@ -1,28 +1,10 @@
-"""Single-command launcher: start the local server and open the browser.
+"""Developer launcher. Thin wrapper around ``python -m soma``.
 
-Binds to 127.0.0.1 only so patient data never leaves the machine.
+For end users, the portable bundle's Soma.command / Soma.bat launchers call
+``python -m soma`` directly.
 """
 
-from __future__ import annotations
-
-import threading
-import webbrowser
-
-import uvicorn
-
-from soma import config
-
-
-def _open_browser() -> None:
-    webbrowser.open(f"http://{config.HOST}:{config.PORT}")
-
-
-def main() -> None:
-    config.ensure_dirs()
-    # Open the browser shortly after the server starts.
-    threading.Timer(1.5, _open_browser).start()
-    uvicorn.run("soma.main:app", host=config.HOST, port=config.PORT, reload=False)
-
+from soma.__main__ import main
 
 if __name__ == "__main__":
     main()
